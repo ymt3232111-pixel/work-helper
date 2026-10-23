@@ -494,11 +494,14 @@ function renderNav(g) {
   let start = s0 && s0 > firstAll ? s0 : firstAll; if (start >= last) start = firstAll;
   const c = pfColors();
   const name = f => f.co + " " + f.zh.replace(f.co, "").replace(/^[-─－\s]+/, "");
+  // 各基金交易日不一樣：先取所有基金日期的聯集，沒有淨值的那天沿用前一筆，滑鼠提示才會對在同一天
+  const days = [...new Set(have.flatMap(f => NAV[f.isin].d.filter(x => { const t = ymd(x); return t >= start && t <= last; })))].sort();
   const sets = have.map((f, i) => {
     const { d, n } = NAV[f.isin];
     let k = d.findIndex(x => ymd(x) >= start); if (k < 0) k = d.length - 1;
     const base = n[k], pts = [];
-    for (let j = k; j < d.length && ymd(d[j]) <= last; j++) pts.push({ x: +ymd(d[j]), y: (n[j] / base - 1) * 100 });
+    let j = k, cur = null;
+    days.forEach(x => { while (j < d.length && d[j] <= x) cur = n[j++]; pts.push({ x: +ymd(x), y: cur == null ? null : (cur / base - 1) * 100 }); });
     const col = navColor(f, i, c);
     return { label: name(f), data: pts, borderColor: col, backgroundColor: col, borderWidth: f.house ? 3 : 1.5, pointRadius: 0, tension: 0 };
   });
@@ -509,7 +512,7 @@ function renderNav(g) {
     options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
       interaction: { mode: "index", intersect: false },
       plugins: { legend: { position: "bottom", labels: { color: c.fg, boxWidth: 14, font: { family: "Noto Sans TC", size: 12 } } },
-        tooltip: { itemSort: (a, b) => b.parsed.y - a.parsed.y, callbacks: { title: t => t.length ? fmtD(t[0].parsed.x) : "", label: t => ` ${t.dataset.label}  ${(t.parsed.y > 0 ? "+" : "") + t.parsed.y.toFixed(2)}%` } } },
+        tooltip: { filter: t => t.parsed.y != null, itemSort: (a, b) => b.parsed.y - a.parsed.y, callbacks: { title: t => t.length ? fmtD(t[0].parsed.x) : "", label: t => ` ${t.dataset.label}  ${(t.parsed.y > 0 ? "+" : "") + t.parsed.y.toFixed(2)}%` } } },
       scales: { x: { type: "linear", min: +start, max: +last, ticks: { color: c.muted, maxTicksLimit: 7, callback: v => fmtD(v) }, grid: { color: c.line } },
                 y: { ticks: { color: c.muted, callback: v => v + "%" }, grid: { color: ctx => ctx.tick.value === 0 ? c.muted : c.line } } } }
   });
