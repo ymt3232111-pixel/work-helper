@@ -1,17 +1,17 @@
 # 把工作助手 fund-finder.html 轉成 GitHub Pages 公開版 index.html：
-# 獨立 HTML 文件，只留基金競品／穩月配／績效比較，市場指標、彭博路徑、Outlook 資料來源不公開。
+# 獨立 HTML 文件，只留基金競品／穩月配／績效比較，市場指標、彭博路徑、Outlook 資料來源、業績追蹤不公開。
 # 用法：python3 make_public.py <fund-finder.html> <index.html>
 import json, re, sys
 src, dst = sys.argv[1], sys.argv[2]
 s = open(src, encoding="utf-8").read()
-for v in ("mk", "bp", "ol"):
+for v in ("mk", "bp", "ol", "sl"):
     s, n = re.subn(r'\s*<button class="tab"[^>]*data-view="%s"[^>]*>.*?</button>' % v, "", s)
     assert n == 1, v
 m = re.search(r"const DATA = (\{.*?\});\n", s)
 d = json.loads(m.group(1)); d["mk"] = d["bp"] = d["ol"] = []
 s = s[:m.start(1)] + json.dumps(d, ensure_ascii=False) + s[m.end(1):]
 # 公開版不開放直接跳到私人頁籤
-s = s.replace('if (["funds", "div", "pf", "mk", "bp", "ol"].includes(location.hash.slice(1)))',
+s = s.replace('if (["funds", "div", "pf", "mk", "bp", "ol", "sl"].includes(location.hash.slice(1)))',
               'if (["funds", "div", "pf"].includes(location.hash.slice(1)))')
 # 優勢總結、風險與報酬、配息穩定度（近 12 次、降配）先不公開（vivi 2026-10-23）
 def cut(a, b, new=""):
@@ -24,6 +24,9 @@ for a, b in [('<th>近 12 次配息率</th><th>降配</th>', ''), ('<table style
              ('      ${divCells(f.zh)}\n', ''), ('colspan="8" class="empty">沒有符合的基金', 'colspan="6" class="empty">沒有符合的基金')]:
     assert s.count(a) == 1, a; s = s.replace(a, b)
 m = re.search(r"const DIV = (\{.*?\});\n", s); s = s[:m.start(1)] + "{}" + s[m.end(1):]
+# 業績是內部資料：業績追蹤的頁面和程式（含 SALES 資料）整段拿掉
+cut('  <section id="v-sl" hidden>', '</section>\n')
+cut('// 業績追蹤：', 'slOpts();\n')
 i = s.index("<title>"); j = s.index("</title>") + 8
 head = '<!doctype html>\n<html lang="zh-Hant">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
 open(dst, "w", encoding="utf-8").write(head + s[i:j] + "\n</head>\n<body>\n" + s[:i] + s[j:] + "\n</body>\n</html>\n")
