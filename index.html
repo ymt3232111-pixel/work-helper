@@ -92,6 +92,7 @@ td.neg{color:var(--warn)}
 .tile.win .r{color:var(--accent);font-weight:500}
 .tile.lose .r{color:var(--warn)}
 .headline{font-size:15px;line-height:1.6;margin:0}
+.navupd{gap:8px}#navupdbtn:disabled{opacity:.5;cursor:default}
 #sumweak details{font-size:13px;color:var(--muted)}#sumweak summary{cursor:pointer}#sumweak ul{margin:6px 0 0;padding-left:20px;line-height:1.7}
 .spark{vertical-align:middle}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:6px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
@@ -144,6 +145,7 @@ td.neg{color:var(--warn)}
     </div>
     <div class="pfcard">
       <div class="pfhead"><h2 id="navtitle"></h2><div class="sub" id="navsub"></div></div>
+      <div class="row navupd"><span class="sub" id="navupdtxt"></span><button class="chip" id="navupdbtn" hidden>更新淨值</button><span class="sub" id="navupdmsg" role="status"></span></div>
       <div class="row" style="gap:8px"><div class="chips" id="navper" role="group" aria-label="走勢期間"></div>
         <span class="row" id="navcus" hidden style="gap:6px"><input type="date" id="navfrom" aria-label="起日"><span class="sub">至</span><input type="date" id="navto" aria-label="迄日"></span></div>
       <div class="navchart" id="navbox"></div>
@@ -318,6 +320,34 @@ function navStart(last, per) {
 }
 // 夏普值用的無風險利率（年化 %），可依需要調整
 const RF = 4;
+const NAV_UPDATED = "2026/10/28 09:52";
+// 「更新淨值」：透過 Claude Code Remote 連接器觸發雲端更新工作（只有在 Claude 裡開啟才有，GitHub 公開版不顯示按鈕）
+const NAV_TRIGGER = "trig_01KwuYvWz8zLdkSJErV3QDhA";
+{
+  const last = Math.max(...Object.values(NAV).map(x => +x.d.at(-1)));
+  const ds = String(last), lastTxt = `${+ds.slice(4, 6)}/${+ds.slice(6, 8)}`;
+  $("#navupdtxt").textContent = `淨值資料到 ${lastTxt}（${NAV_UPDATED} 更新）`;
+  const KEY = "navupd-sent";
+  let sentAt = 0; try { sentAt = +localStorage.getItem(KEY) || 0; } catch (e) {}
+  const pending = () => Date.now() - sentAt < 15 * 60e3;
+  if (pending()) $("#navupdmsg").textContent = "已送出更新，完成後重新開啟頁面就會看到新資料";
+  (async () => {
+    const mcp = window.claude && await window.claude.use("mcp");
+    if (!mcp) return;
+    const btn = $("#navupdbtn"); btn.hidden = false; btn.disabled = pending();
+    btn.addEventListener("click", async () => {
+      btn.disabled = true; $("#navupdmsg").textContent = "送出中…";
+      try {
+        await mcp.callTool("Claude Code Remote", "fire_trigger", { trigger_id: NAV_TRIGGER }, { cache: false });
+        sentAt = Date.now(); try { localStorage.setItem(KEY, String(sentAt)); } catch (e) {}
+        $("#navupdmsg").textContent = "已送出更新，約 5 分鐘後完成，重新開啟頁面就會看到新資料";
+      } catch (e) {
+        btn.disabled = false;
+        $("#navupdmsg").textContent = e && e.code === "not_granted" ? "需要允許這個頁面使用 Claude Code Remote 才能更新" : "沒有送出成功，請稍後再試";
+      }
+    });
+  })();
+}
 // 取 [start, end] 區間的淨值算：期間報酬、年化報酬、年化波動、最大回撤、夏普值
 function navStats(isin, start, end) {
   const { d, n } = NAV[isin], xs = [];
