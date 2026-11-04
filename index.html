@@ -107,7 +107,6 @@ td.neg{color:var(--warn)}
   </header>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="t-funds" data-view="funds" aria-selected="true">基金競品</button>
-    <button class="tab" role="tab" id="t-div" data-view="div" aria-selected="false">穩月配</button>
     <button class="tab" role="tab" id="t-pf" data-view="pf" aria-selected="false">績效比較</button>
   </div>
 
@@ -126,17 +125,6 @@ td.neg{color:var(--warn)}
       <span><b style="color:var(--warn);font-weight:500">待補</b> = 表格裡還沒填彭博代碼</span>
     </div>
     <div class="groups" id="groups"></div>
-  </section>
-
-  <section id="v-div" hidden>
-    <div class="bar"><div class="row">
-      <input type="search" id="q4" placeholder="搜尋基金名稱或公司…" autocomplete="off">
-      <select id="g4" aria-label="競品組"><option value="">全部競品組</option></select>
-      <label class="sub" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="only4">只看已有配息率</label>
-      <span class="count" id="cnt4"></span>
-    </div></div>
-    <div class="legend"><span>年化配息率取自 MoneyDJ 配息頁（美元・前收・穩月配級別），各列附配息基準日。「配息頁」直接開該級別的配息紀錄；還沒有代碼的先開基金頁。</span></div>
-    <div class="tbl simple" style="margin-top:12px"><table><thead><tr><th>競品組</th><th>基金公司</th><th>基金名稱</th><th>前收穩月配級別</th><th>年化配息率</th><th>MoneyDJ</th></tr></thead><tbody id="divb"></tbody></table></div>
   </section>
 
   <section id="v-pf" hidden>
@@ -251,7 +239,7 @@ function render() {
     const house = g.rows[0];
     html += `<div class="group"><h2><span class="asset">${esc(g.asset)}</span>${esc(g.label || g.name)}</h2>
       <div class="meta">主打：${esc(house.zh)} · 競品 ${g.rows.length - 1} 檔 · 規模與國人比重：境外基金資訊觀測站 ${FC_ASOF}（整檔基金，不分級別）</div>
-      <div class="tbl"><table><thead><tr><th>基金公司</th><th>基金名稱</th><th>級別／幣別</th><th class="num">基金規模<br>(新台幣億)</th><th class="num">國人比重</th><th>彭博代碼</th><th>ISIN</th><th>MoneyDJ</th><th>基金詳細資訊</th></tr></thead><tbody>` +
+      <div class="tbl"><table><thead><tr><th>基金公司</th><th>基金名稱</th><th>級別／幣別</th><th class="num">基金規模<br>(新台幣億)</th><th class="num">國人比重</th><th class="num">年化配息率</th><th>彭博代碼</th><th>ISIN</th><th>MoneyDJ</th><th>基金詳細資訊</th></tr></thead><tbody>` +
       rows.map(f => {
         const others = [...byIsin[f.isin]].filter(n => n !== g.name).map(n => (groups.find(x => x.name === n) || {}).label || n);
         return `<tr class="${f.house ? "house" : ""}">
@@ -260,6 +248,7 @@ function render() {
           <td class="cls">${hl(f.cls, q)}</td>
           <td class="num">${FC[f.isin] ? Math.round(FC[f.isin].aum / 100).toLocaleString() : "—"}</td>
           <td class="num">${FC[f.isin] ? FC[f.isin].tw.toFixed(2) + "%" : "—"}</td>
+          ${divCell(f, g)}
           <td>${codeCell(f.bbg, q)}</td>
           <td>${codeCell(f.isin, q)}</td>
           <td>${f.dj ? `<a class="dj" href="${esc(f.dj)}" target="_blank" rel="noopener">開啟 ↗</a>` : ""}</td>
@@ -276,28 +265,13 @@ $("#co").addEventListener("change", e => { state.co = e.target.value; render(); 
 
 const DIVCLS = {"M&G新興市場債券基金":{"cls":"A美元月配F","code":"MMG53","rate":16.29,"date":"2026/09/18"},"M&G入息基金":{"cls":"A美元避險月配F","code":"MMG55","rate":10.1,"date":"2026/09/18"},"M&G收益優化基金":{"cls":"A美元避險月配F","code":"MMG58","rate":10.87,"date":"2026/09/18"},"M&G智慧收成基金":{"cls":"A美元避險月配F2","code":"MMG82","rate":10.1,"date":"2026/09/18"},"M&G環球股息基金":{"cls":"A美元月配F","code":"MMG71","rate":7.64,"date":"2026/09/18"},"M&G北美股息基金":{"cls":"A美元月配F","code":"MMG73","rate":8.15,"date":"2026/09/18"},"M&G日本基金":{"none":"無配息級別"},"M&G短期優質債券基金":{"none":"只有季配，無月配"},"高盛新興市場債券基金(X股)":{"cls":"X股美元(月配息)","code":"ANZA2","rate":19.57,"date":"2026/10/01"},"高盛投資級公司債基金(X股)":{"cls":"X股美元(月配息)","code":"ANZ91","rate":7.89,"date":"2026/10/01"},"駿利亨德森平衡基金":{"cls":"A6穩月配美元","code":"JAZC8","rate":6.97,"date":"2026/10/14"},"富達基金─全球入息基金":{"cls":"A股【F1穩定月配息】美元","code":"FTZM6","rate":2.4,"date":"2026/09/30"},"富達基金-亞太入息基金":{"cls":"A 股-F1 穩定月配息-美元"},"聯博-新興市場債券基金":{"cls":"AA(穩定月配)級別美元","code":"ALB70","rate":7.75,"date":"2026/09/29"},"PIMCO新興市場債券基金":{"cls":"M級類別(穩定月收息股份)","code":"PIM93","rate":11.96,"date":"2026/09/28"},"東方匯理基金新興市場債券":{"cls":"A美元(穩定月配息)","code":"PIZN8","rate":18.08,"date":"2026/09/30"},"摩根投資基金-多重收益基金":{"cls":"A股(美元對沖)(穩定月配)","code":"JFZN3","rate":10.01,"date":"2026/10/07"},"安聯收益成長基金":{"cls":"AM穩定月收類股(美元)","code":"TLZ64","rate":8.62,"date":"2026/10/14"},"先機環球動態債券基金":{"cls":"L類收益股(美元穩定配息)","code":"SGFC5","rate":6.7,"date":"2026/08/28"},"PIMCO多元收益債券基金":{"cls":"BM級類別(穩定月收息股份)","code":"PIM90","rate":9.76,"date":"2026/09/28","warn":"BM 可能是後收級別，請確認"},"富達全球優質債券基金":{"cls":"A股【F1穩定月配息】美元避險","code":"FTZW8","rate":6.47,"date":"2026/09/30"},"聯博-美國收益基金":{"cls":"AA(穩定月配)級別美元","code":"ALB62","rate":8.58,"date":"2026/09/29"},"富達基金─永續發展全球存股優勢基金":{"cls":"A股【F1穩定月配息】美元避險","code":"FTZT6","rate":5.13,"date":"2026/09/30"},"貝萊德全球智慧數據股票入息基金":{"cls":"A11美元(強化穩定配息)","code":"SHZA43","rate":8.69,"date":"2026/09/29"},"PIMCO收益增長基金":{"cls":"BM級類別(穩定月收息股份)","code":"PIMA3","rate":9.24,"date":"2026/09/28","warn":"BM 可能是後收級別，請確認"},"聯博-短期債券基金":{"cls":"AA(穩定月配)級別美元","code":"ALB66","rate":4.64,"date":"2026/09/29"},"富蘭克林坦伯頓全球投資-美元短期票券基金":{"cls":"美元A(Mdis)","code":"FLZ38","rate":3.67,"date":"2026/09/30"},"東方匯理基金美元短期債券":{"cls":"A2美元(穩定月配息)","code":"PIZW6","rate":5.04,"date":"2026/09/30"},"富蘭克林坦伯頓全球投資-穩定月收益基金":{"cls":"美元A(Mdis)","code":"FLZ92","rate":8.33,"date":"2026/09/30"},"聯博-全球多元收益基金":{"cls":"AI(穩定月配)級別美元","code":"ALBG2","rate":10.83,"date":"2026/10/29"},"施羅德環球基金系列-環球收益成長":{"cls":"A-月配固定(美元)","code":"PYZR7","rate":8.0,"date":"2026/10/28"}};
 const DIV_SKIP = ["日本股票（M&G 日本組(TOKYO)）", "美國股票（M&G 北美股息組(NADI)）", "亞太股票入息（先機亞太入息組(API)）"];
-groups.filter(g => !DIV_SKIP.includes(g.name)).forEach(g => $("#g4").insertAdjacentHTML("beforeend", `<option value="${esc(g.name)}">${esc(g.label || g.name)}</option>`));
-// 近 12 次配息的小折線＋區間，與每單位配息減少的次數
-function divCells(zh) {
-  const h = DIV[zh] && DIV[zh].h;
-  if (!h || h.length < 2) return '<td><span class="en">—</span></td><td><span class="en">—</span></td>';
-  const y = h.slice(-12).map(x => x[1]), lo = Math.min(...y), hi = Math.max(...y), W = 90, H = 24;
-  const pts = y.map((v, i) => `${(i / (y.length - 1) * W).toFixed(1)},${(H - 2 - (hi > lo ? (v - lo) / (hi - lo) : .5) * (H - 4)).toFixed(1)}`).join(" ");
-  const cuts = h.slice(-13).map((x, i, a) => i && x[2] < a[i - 1][2] * 0.995 ? x[0] : null).filter(Boolean);
-  return `<td class="code"><svg class="spark" width="${W}" height="${H}" role="img" aria-label="近 12 次年化配息率 ${lo.toFixed(2)}% 至 ${hi.toFixed(2)}%"><title>${h.slice(-12).map(x => x[0] + " " + x[1].toFixed(2) + "%").join("\n")}</title><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><div class="en">${lo.toFixed(2)}–${hi.toFixed(2)}%，最新 ${esc(h.at(-1)[0])}</div></td>` +
-    `<td>${cuts.length ? `<span class="missing">${cuts.length} 次</span><div class="en">最近 ${esc(cuts.at(-1))}</div>` : '<span class="en">無</span>'}</td>`;
+// 年化配息率：MoneyDJ（美元・前收・穩月配級別）；日本、北美、亞太組不看月配
+function divCell(f, g) {
+  const d = DIVCLS[f.zh];
+  if (DIV_SKIP.includes(g.name) || !d || d.none) return '<td class="num"><span class="en">—</span></td>';
+  if (d.rate == null) return `<td class="num"><span class="missing">待補</span><div class="en">${esc(d.cls || "")}</div></td>`;
+  return `<td class="num" title="基準日 ${esc(d.date)}">${d.rate.toFixed(2)}%<div class="en">${esc(d.cls)}</div></td>`;
 }
-function renderDiv() {
-  const q = $("#q4").value.trim().toLowerCase(), g = $("#g4").value, only = $("#only4").checked;
-  const rows = DATA.funds.filter(f => !DIV_SKIP.includes(f.grp) && (!g || f.grp === g) && (!only || (DIVCLS[f.zh] && DIVCLS[f.zh].rate != null)) && (!q || [f.co, f.zh, f.en].some(v => v && v.toLowerCase().includes(q))));
-  $("#divb").innerHTML = rows.map(f => { const d = DIVCLS[f.zh]; const gg = groups.find(x => x.name === f.grp);
-    return `<tr class="${f.house ? "house" : ""}"><td><span class="cat">${esc(gg.label || gg.name)}</span></td><td class="co">${esc(f.co)}</td><td><div class="zh">${hl(f.zh, q)}</div><div class="en">${hl(f.en, q)}</div></td>
-      <td class="cls">${!d ? '<span class="missing">未知，待補</span>' : d.none ? `<span class="en">${esc(d.none)}</span>` : esc(d.cls) + (d.warn ? `<div class="missing">${esc(d.warn)}</div>` : "")}</td>
-      <td class="code">${d && d.rate != null ? `${d.rate.toFixed(2)}%<div class="en">基準日 ${esc(d.date)}</div>` : d && d.cls ? '<span class="missing">缺 MoneyDJ 代碼</span>' : '<span class="en">—</span>'}</td>
-      <td>${d && d.code ? `<a class="dj" href="https://www.moneydj.com/funddj/yp/wb05.djhtm?a=${esc(d.code)}" target="_blank" rel="noopener">配息頁 ↗</a>` : f.dj ? `<a class="dj" href="${esc(f.dj)}" target="_blank" rel="noopener">基金頁 ↗</a>` : ""}</td></tr>`; }).join("") || `<tr><td colspan="6" class="empty">沒有符合的基金</td></tr>`;
-  $("#cnt4").textContent = `顯示 ${rows.length} 列`;
-}
-$("#q4").addEventListener("input", renderDiv); $("#g4").addEventListener("change", renderDiv); $("#only4").addEventListener("change", renderDiv);
 const PERF_MED = {};
 const PERF = {"IE000ITXATA3":{"v":{"1M":0.26,"YTD":10.93,"3M":0.19,"6M":4.13,"1Y":13.84,"2Y":34.86,"Y2024":12.01,"Y2025":20.84},"sd3y":null,"asof":"2026/10/31","file":"INCA"},"LU1309513098":{"v":{"1M":-5.6,"YTD":8.7,"3M":-4.87,"6M":-2.24,"1Y":11.59,"2Y":62.05,"3Y":110.02,"Y2022":0.24,"Y2023":27.56,"Y2024":34.03,"Y2025":39.37},"sd3y":14.38,"asof":"2026/10/31","file":"Tokyo"},"LU0205439572":{"v":{"1M":-4.65,"YTD":13.57,"3M":-3.04,"6M":0.81,"1Y":17.09,"2Y":41.73,"3Y":70.6,"Y2022":-10.67,"Y2023":6.58,"Y2024":2.81,"Y2025":29.87},"sd3y":13.33,"asof":"2026/10/31","file":"API"},"IE00B1D7YK27":{"v":{"1M":1.12,"YTD":-0.43,"3M":-1.13,"6M":-0.9,"1Y":0.4,"2Y":9.43,"3Y":24.88,"Y2022":-17.04,"Y2023":8.49,"Y2024":5.82,"Y2025":9.24},"sd3y":5.04,"asof":"2026/10/31","file":"OPIN.vi"},"LU1582988991":{"v":{"1M":-0.17,"YTD":4.25,"3M":-1.57,"6M":1.67,"1Y":5.47,"2Y":19.54,"3Y":35.98,"Y2022":-0.69,"Y2023":9.45,"Y2024":4.26,"Y2025":15.59},"sd3y":6.47,"asof":"2026/10/31","file":"INCA"},"LU0079474960":{"v":{"1M":-2.82,"YTD":1.47,"3M":-0.13,"6M":0.38,"1Y":-0.26,"2Y":18.73,"3Y":61.74,"Y2022":-29.39,"Y2023":33.5,"Y2024":24.33,"Y2025":12.11},"sd3y":15.54,"asof":"2026/10/31","file":"NADI"},"LU1882441907":{"v":{"1M":0.36,"YTD":2.79,"3M":0.83,"6M":1.68,"1Y":3.68,"2Y":8.46,"3Y":15.57,"Y2022":0.29,"Y2023":6.61,"Y2024":5.93,"Y2025":4.71},"sd3y":0.55,"asof":"2026/10/31","file":"SDAT"},"LU0265550359":{"v":{"1M":1.15,"YTD":14.31,"3M":3.19,"6M":7.62,"1Y":16.01,"2Y":30.31,"3Y":65.8,"Y2022":-14.84,"Y2023":15.76,"Y2024":16.66,"Y2025":12.59},"sd3y":8.23,"asof":"2026/10/31","file":"GDIF"},"LU0251131958":{"v":{"1M":2.45,"YTD":4.42,"3M":-0.22,"6M":-0.39,"1Y":8.35,"2Y":14.24,"3Y":36.42,"Y2022":-5.58,"Y2023":11.58,"Y2024":8.09,"Y2025":9.43},"sd3y":12.18,"asof":"2026/10/31","file":"NADI"},"LU1882450304":{"v":{"1M":-0.17,"YTD":0.55,"3M":-2.47,"6M":-1.74,"1Y":2.59,"2Y":13.92,"3Y":33.99,"Y2022":-14.77,"Y2023":10.06,"Y2024":7.74,"Y2025":13.08},"sd3y":5.98,"asof":"2026/10/31","file":"EMB"},"LU0882574303":{"v":{"1M":0.89,"YTD":-0.41,"3M":-1.14,"6M":-0.41,"1Y":0.27,"2Y":8.73,"3Y":22.09,"Y2022":-10.52,"Y2023":8.54,"Y2024":6.31,"Y2025":8.21},"sd3y":4.33,"asof":"2026/10/31","file":"OPIN.vi"},"LU0210536198":{"v":{"1M":-5.32,"YTD":-1.05,"3M":2.34,"6M":0.19,"1Y":-5.33,"2Y":19.09,"3Y":74.73,"Y2022":-26.78,"Y2023":34.83,"Y2024":33.09,"Y2025":13.22},"sd3y":18.15,"asof":"2026/10/31","file":"NADI"},"IE0031386414":{"v":{"1M":0.23,"YTD":-0.91,"3M":-1.67,"6M":-0.59,"1Y":-0.92,"2Y":5.36,"3Y":16.63,"Y2022":2.23,"Y2023":4.5,"Y2024":-0.51,"Y2025":7.28},"sd3y":6.49,"asof":"2026/10/31","file":"OPIN.vi"},"IE0004445015":{"v":{"1M":0.29,"YTD":2.82,"3M":-0.11,"6M":2.19,"1Y":2.59,"2Y":18.29,"3Y":47.27,"Y2022":-17.57,"Y2023":13.61,"Y2024":13.66,"Y2025":13.41},"sd3y":9.12,"asof":"2026/10/31","file":"INCA"},"LU0315178854":{"v":{"1M":-7.38,"YTD":17.03,"3M":-4.97,"6M":0.24,"1Y":18.78,"2Y":52.56,"3Y":90.35,"Y2022":-19.78,"Y2023":7.89,"Y2024":9.31,"Y2025":33.7},"sd3y":18.0,"asof":"2026/10/31","file":"API"},"LU1670632337":{"v":{"1M":0.09,"YTD":0.31,"3M":-1.95,"6M":-0.7,"1Y":2.25,"2Y":13.94,"3Y":31.07,"Y2022":-13.71,"Y2023":14.11,"Y2024":2.97,"Y2025":14.82},"sd3y":6.57,"asof":"2026/10/31","file":"EMB"},"LU2242646235":{"v":{"1M":1.69,"YTD":6.58,"3M":-0.53,"6M":4.29,"1Y":11.46,"2Y":30.03,"3Y":63.47,"Y2022":-11.35,"Y2023":16.15,"Y2024":8.93,"Y2025":24.58},"sd3y":11.99,"asof":"2026/10/31","file":"GDIF"},"LU0762807625":{"v":{"1M":-0.39,"YTD":5.59,"3M":-0.58,"6M":1.61,"1Y":6.83,"2Y":17.42,"3Y":39.04,"Y2022":-11.88,"Y2023":8.41,"Y2024":8.2,"Y2025":10.93},"sd3y":6.5,"asof":"2026/10/31","file":"INCA"},"LU1670711040":{"v":{"1M":3.6,"YTD":13.83,"3M":3.73,"6M":8.44,"1Y":22.39,"2Y":32.52,"3Y":74.5,"Y2022":-7.8,"Y2023":13.72,"Y2024":15.02,"Y2025":15.99},"sd3y":11.2,"asof":"2026/10/31","file":"GDIF"},"LU0102828612":{"v":{"1M":0.75,"YTD":1.0,"3M":0.05,"6M":0.6,"1Y":1.41,"2Y":5.77,"3Y":11.2,"Y2022":-3.6,"Y2023":4.64,"Y2024":3.57,"Y2025":4.12},"sd3y":1.46,"asof":"2026/10/31","file":"SDAT"},"LU1670717831":{"v":{"1M":0.5,"YTD":1.94,"3M":0.18,"6M":1.32,"1Y":2.53,"2Y":8.5,"3Y":16.73,"Y2022":-1.97,"Y2023":8.0,"Y2024":5.74,"Y2025":5.45},"sd3y":1.5,"asof":"2026/10/31","file":"SDAT"},"LU1582986359":{"v":{"1M":-0.09,"YTD":4.84,"3M":-0.23,"6M":2.79,"1Y":5.67,"2Y":13.16,"3Y":28.68,"Y2022":-10.6,"Y2023":9.35,"Y2024":4.9,"Y2025":8.55},"sd3y":6.67,"asof":"2026/10/31","file":"INCA"},"IE00BF4KRW19":{"v":{"1M":-0.11,"YTD":14.19,"3M":0.86,"6M":12.64,"1Y":25.04,"2Y":62.87,"3Y":101.92,"Y2022":4.84,"Y2023":39.46,"Y2024":22.95,"Y2025":37.34},"sd3y":13.26,"asof":"2026/09/30","file":"Tokyo"},"LU0546920561":{"v":{"1M":2.07,"YTD":-2.42,"3M":-0.85,"6M":-1.87,"1Y":-1.96,"2Y":4.06,"3Y":17.62,"Y2022":-17.42,"Y2023":8.16,"Y2024":1.36,"Y2025":7.4},"sd3y":6.47,"asof":"2026/10/31","file":"OPIN.vi"},"LU0095030564":{"v":{"1M":2.26,"YTD":-1.96,"3M":-1.17,"6M":-1.96,"1Y":-1.37,"2Y":5.25,"3Y":18.1,"Y2022":-13.08,"Y2023":8.31,"Y2024":2.82,"Y2025":7.55},"sd3y":5.73,"asof":"2026/10/31","file":"OPIN.vi"},"LU1797807127":{"v":{"1M":-5.37,"YTD":20.89,"3M":-0.92,"6M":9.58,"1Y":24.77,"2Y":69.01,"3Y":110.75,"Y2022":9.19,"Y2023":35.01,"Y2024":23.79,"Y2025":33.89},"sd3y":15.05,"asof":"2026/10/31","file":"Tokyo"},"LU0965088593":{"v":{"1M":-4.66,"YTD":29.8,"3M":-1.94,"6M":13.08,"1Y":40.4,"2Y":81.04,"3Y":110.53,"Y2022":18.25,"Y2023":32.02,"Y2024":21.69,"Y2025":32.35},"sd3y":14.22,"asof":"2026/10/31","file":"Tokyo"},"LU0555020568":{"v":{"1M":1.22,"YTD":0.18,"3M":-1.57,"6M":-1.44,"1Y":1.48,"2Y":13.79,"3Y":33.54,"Y2022":-18.58,"Y2023":10.41,"Y2024":6.21,"Y2025":13.33},"sd3y":6.65,"asof":"2026/10/31","file":"EMB"},"LU0927678507":{"v":{"1M":-1.51,"YTD":16.38,"3M":-0.3,"6M":14.57,"1Y":22.11,"2Y":60.47,"3Y":115.09,"Y2022":-23.04,"Y2023":30.8,"Y2024":33.96,"Y2025":27.49},"sd3y":15.85,"asof":"2026/09/30","file":"Tokyo"},"LU0772969993":{"v":{"1M":6.49,"YTD":11.63,"3M":2.9,"6M":5.06,"1Y":16.24,"2Y":31.93,"3Y":68.91,"Y2022":-12.1,"Y2023":15.0,"Y2024":10.49,"Y2025":22.42},"sd3y":11.88,"asof":"2026/10/31","file":"GDIF"},"IE0005264431":{"v":{"1M":-5.22,"YTD":29.47,"3M":-0.06,"6M":11.05,"1Y":31.85,"2Y":59.56,"3Y":109.19,"Y2022":-15.75,"Y2023":11.52,"Y2024":8.86,"Y2025":29.04},"sd3y":18.2,"asof":"2026/10/31","file":"API"},"LU1670627923":{"v":{"1M":2.94,"YTD":6.4,"3M":2.49,"6M":6.13,"1Y":7.67,"2Y":20.78,"3Y":63.57,"Y2022":-16.12,"Y2023":22.09,"Y2024":17.71,"Y2025":11.76},"sd3y":13.21,"asof":"2026/10/31","file":"NADI"},"LU0246601768":{"v":{"1M":1.34,"YTD":0.92,"3M":-1.63,"6M":-1.28,"1Y":1.96,"2Y":14.26,"3Y":36.46,"Y2022":-19.54,"Y2023":12.36,"Y2024":7.91,"Y2025":12.85},"sd3y":7.05,"asof":"2026/10/31","file":"EMB"},"LU0689472784":{"v":{"1M":-1.42,"YTD":3.42,"3M":-1.74,"6M":-0.56,"1Y":3.36,"2Y":16.45,"3Y":39.94,"Y2022":-19.68,"Y2023":17.29,"Y2024":9.94,"Y2025":10.53},"sd3y":8.64,"asof":"2026/10/31","file":"INCA"},"LU1670725347":{"v":{"1M":1.94,"YTD":-1.3,"3M":-0.82,"6M":-0.95,"1Y":-1.17,"2Y":5.06,"3Y":16.59,"Y2022":-10.2,"Y2023":12.69,"Y2024":1.22,"Y2025":7.08},"sd3y":5.77,"asof":"2026/10/31","file":"OPIN.vi"},"LU0997587083":{"v":{"1M":-9.15,"YTD":13.14,"3M":-3.22,"6M":-2.04,"1Y":17.99,"2Y":70.08,"3Y":102.23,"Y2022":2.33,"Y2023":36.07,"Y2024":20.32,"Y2025":42.54},"sd3y":18.09,"asof":"2026/10/31","file":"Tokyo"},"IE0031385887":{"v":{"1M":-0.92,"YTD":13.75,"3M":1.0,"6M":8.01,"1Y":16.12,"2Y":37.99,"3Y":94.26,"Y2022":-17.34,"Y2023":23.08,"Y2024":23.73,"Y2025":18.22},"sd3y":13.61,"asof":"2026/10/31","file":"NADI"},"LU0188438112":{"v":{"1M":-6.45,"YTD":15.01,"3M":-4.46,"6M":0.99,"1Y":16.45,"2Y":44.03,"3Y":83.33,"Y2022":-17.78,"Y2023":13.41,"Y2024":8.8,"Y2025":28.07},"sd3y":16.01,"asof":"2026/10/31","file":"API"},"IE00B11XYX59":{"v":{"1M":0.72,"YTD":-0.22,"3M":-1.88,"6M":-1.61,"1Y":0.83,"2Y":15.1,"3Y":37.09,"Y2022":-17.8,"Y2023":10.76,"Y2024":7.47,"Y2025":15.08},"sd3y":6.7,"asof":"2026/10/31","file":"EMB"},"LU1883872415":{"v":{"1M":-1.49,"YTD":5.97,"3M":-0.98,"6M":-2.73,"1Y":6.11,"2Y":29.22,"3Y":82.46,"Y2022":-20.48,"Y2023":26.79,"Y2024":20.17,"Y2025":21.84},"sd3y":14.68,"asof":"2026/10/31","file":"NADI"},"LU0128526901":{"v":{"1M":0.35,"YTD":2.99,"3M":0.91,"6M":1.83,"1Y":3.66,"2Y":8.08,"3Y":13.69,"Y2022":1.33,"Y2023":4.91,"Y2024":5.07,"Y2025":4.16},"sd3y":0.21,"asof":"2026/10/31","file":"SDAT"},"LU1162221912":{"v":{"1M":2.19,"YTD":6.94,"3M":0.72,"6M":1.69,"1Y":9.09,"2Y":16.67,"3Y":38.04,"Y2022":-7.35,"Y2023":7.05,"Y2024":6.06,"Y2025":10.87},"sd3y":6.58,"asof":"2026/10/31","file":"INCA"},"LU1127386735":{"v":{"1M":-0.3,"YTD":3.25,"3M":-1.34,"6M":0.69,"1Y":4.35,"2Y":17.45,"3Y":41.68,"Y2022":-16.27,"Y2023":12.95,"Y2024":9.72,"Y2025":13.24},"sd3y":7.14,"asof":"2026/10/31","file":"INCA"},"LU1195516338":{"v":{"1M":-2.23,"YTD":9.05,"3M":-2.32,"6M":1.47,"1Y":9.92,"2Y":34.11,"3Y":60.05,"Y2022":-16.24,"Y2023":15.25,"Y2024":7.6,"Y2025":21.66},"sd3y":9.91,"asof":"2026/10/31","file":"INCA"}};
 const PF_CUM = ["1M","3M","6M","YTD","1Y","2Y","3Y","5Y","10Y"];
@@ -639,10 +613,10 @@ document.querySelector(".tabs").addEventListener("click", e => {
 });
 function show(v) {
   document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === v));
-  ["funds", "div", "pf", "mk", "bp", "ol"].forEach(x => $("#v-" + x).hidden = x !== v);
+  ["funds", "pf", "mk", "bp", "ol"].forEach(x => $("#v-" + x).hidden = x !== v);
   if (v === "pf") renderPf();
 }
-if (["funds", "div", "pf", "mk", "bp", "ol"].includes(location.hash.slice(1))) show(location.hash.slice(1));
+if (["funds", "pf"].includes(location.hash.slice(1))) show(location.hash.slice(1));
 
 let tt;
 document.addEventListener("click", async e => {
@@ -654,7 +628,7 @@ document.addEventListener("click", async e => {
 });
 function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("show"), 1500); }
 
-chips(); pfChips(); render(); renderDiv(); renderMk(); renderBp(); renderOl();
+chips(); pfChips(); render(); renderMk(); renderBp(); renderOl();
 </script>
 
 </body>
